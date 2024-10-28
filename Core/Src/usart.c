@@ -89,5 +89,13 @@ void MX_USART1_UART_Init(void)
 }
 
 /* USER CODE BEGIN 1 */
-
+void usart_print(uint8_t *p_msg)
+{
+  uint8_t msg_len = strlen(p_msg);
+  for (int i = 0; i < msg_len; ++i)
+  {
+    LL_USART_TransmitData8(USART1, p_msg[i]);
+    while(!LL_USART_IsActiveFlag_TC(USART1));
+  }
+}
 /* USER CODE END 1 */
