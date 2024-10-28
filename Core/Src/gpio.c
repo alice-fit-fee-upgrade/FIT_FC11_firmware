@@ -29,7 +29,15 @@
 /* Configure GPIO                                                             */
 /*----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
+extern TIM_HandleTypeDef htim4;
 
+struct button sw_buttons[SW_PINS_NUM] = {
+  {.pin = GPIO_PIN_8, .b_debounced = true},
+  {.pin = GPIO_PIN_9, .b_debounced = true},
+  {.pin = GPIO_PIN_10, .b_debounced = true},
+  {.pin = GPIO_PIN_11, .b_debounced = true},
+  {.pin = GPIO_PIN_12, .b_debounced = true},
+};
 /* USER CODE END 1 */
 
 /** Configure pins as
@@ -86,11 +94,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PAPin PAPin PAPin PAPin
-                           PAPin */
-  GPIO_InitStruct.Pin = SW1_Pin|SW2_Pin|SW3_Pin|SW4_Pin
-                          |SW5_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  /*Configure GPIO pins : PA8 PA9 PA10 PA11
+                           PA12 */
+  GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_10|GPIO_PIN_11
+                          |GPIO_PIN_12;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
@@ -110,5 +118,60 @@ void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 2 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  for (uint8_t sw_idx = 0; sw_idx < SW_PINS_NUM; ++sw_idx)
+  {
+    if (sw_buttons[sw_idx].pin == GPIO_Pin)
+    {
+      if(sw_buttons[sw_idx].b_debounced == true)
+      {
+  		  HAL_TIM_Base_Start_IT(&htim4);
+		    sw_buttons[sw_idx].b_debounced = false;
+	    }
+	    else
+      {
+		    __NOP();
+	    }
+    }
+  }
+}
 
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* Prevent unused argument(s) compilation warning */
+  if (htim == &htim4)
+  {
+    for (uint8_t sw_idx = 0; sw_idx < SW_PINS_NUM; ++sw_idx)
+    {
+      sw_buttons[sw_idx].state = HAL_GPIO_ReadPin(GPIOA, sw_buttons[sw_idx].pin);
+      sw_buttons[sw_idx].b_debounced = true;
+    }
+    HAL_TIM_Base_Stop_IT(htim);
+  }
+}
+
+void gpio_sw_state_read()
+{
+  for (uint8_t sw_idx = 0; sw_idx < SW_PINS_NUM; ++sw_idx)
+  {
+    sw_buttons[sw_idx].state = HAL_GPIO_ReadPin(GPIOA, sw_buttons[sw_idx].pin);
+  }
+
+  return;
+}
+
+uint8_t gpio_sw_addr_get()
+{
+  uint8_t addr = 0;
+  for (uint8_t sw_idx = 0; sw_idx < SW_PINS_NUM; ++sw_idx)
+  {
+    if (sw_buttons[sw_idx].state == GPIO_PIN_SET)
+    {
+      addr |= 0x01 << sw_idx;
+    }
+  }
+
+  return addr;
+}
 /* USER CODE END 2 */

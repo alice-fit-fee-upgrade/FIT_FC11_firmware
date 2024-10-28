@@ -29,17 +29,25 @@ extern "C" {
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "stdbool.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN Private defines */
+#define SW_PINS_NUM   5
 
+struct button
+{
+  uint16_t pin;
+  GPIO_PinState state;
+  bool b_debounced;
+};
 /* USER CODE END Private defines */
 
 void MX_GPIO_Init(void);
 
 /* USER CODE BEGIN Prototypes */
-
+void gpio_sw_state_read(void);
+uint8_t gpio_sw_addr_get(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

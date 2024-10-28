@@ -87,16 +87,6 @@ void Error_Handler(void);
 #define EN8_GPIO_Port GPIOA
 #define PWM_Pin GPIO_PIN_0
 #define PWM_GPIO_Port GPIOB
-#define SW1_Pin GPIO_PIN_8
-#define SW1_GPIO_Port GPIOA
-#define SW2_Pin GPIO_PIN_9
-#define SW2_GPIO_Port GPIOA
-#define SW3_Pin GPIO_PIN_10
-#define SW3_GPIO_Port GPIOA
-#define SW4_Pin GPIO_PIN_11
-#define SW4_GPIO_Port GPIOA
-#define SW5_Pin GPIO_PIN_12
-#define SW5_GPIO_Port GPIOA
 #define TACH_Pin GPIO_PIN_3
 #define TACH_GPIO_Port GPIOB
 #define RS_DE_Pin GPIO_PIN_5

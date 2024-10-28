@@ -98,6 +98,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_USART1_UART_Init();
+  MX_TIM4_Init();
 
   /* Initialize interrupts */
   MX_NVIC_Init();
@@ -112,12 +113,19 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  gpio_sw_state_read();
+
   while (1)
   {
+    /* Parse the message from console */
     cli_process(&cli);
-    HAL_Delay(50);
-    //HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_0);
-    //usart_print("Hello!\r\n");
+
+    /* Get address */
+    uint8_t addr = gpio_sw_addr_get();
+
+    /* Some delay */
+    HAL_Delay(250);
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -176,6 +184,12 @@ static void MX_NVIC_Init(void)
   /* USART1_IRQn interrupt configuration */
   NVIC_SetPriority(USART1_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(),0, 0));
   NVIC_EnableIRQ(USART1_IRQn);
+  /* EXTI15_10_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+  /* EXTI9_5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
 /* USER CODE BEGIN 4 */
