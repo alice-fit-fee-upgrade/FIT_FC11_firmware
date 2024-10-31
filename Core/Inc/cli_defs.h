@@ -2,6 +2,7 @@
 #define _CLI_DEFS_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifndef MAX_BUF_SIZE
 #define MAX_BUF_SIZE 128 /* Maximum size of CLI Rx buffer */
@@ -11,15 +12,29 @@
 #define CMD_TERMINATOR '\r' /* Delimiter denoting end of cmd from user */
 #endif
 
+#ifndef CMD_NEWLINE
+#define CMD_NEWLINE '\n' 
+#endif
+
+#define ADDR_MIN 	1
+#define ADDR_MAX 	31 
+#define ADDR_SIZE 	2
+
 typedef enum {
-	CLI_OK,		/* API execution successful.                */
-	CLI_E_NULL_PTR, /* Null pointer error.                      */
+	CLI_OK,					/* API execution successful.                */
+	CLI_E_NULL_PTR, 		/* Null pointer error.                      */
 	CLI_E_IO,
-	CLI_E_CMD_NOT_FOUND, /* Command name not found in command table. */
-	CLI_E_INVALID_ARGS,  /* Invalid function parameters/arguments.   */
-	CLI_E_BUF_FULL,	     /* CLI buffer full.                         */
-	CLI_IDLE	     /* No command to execute at the moment      */
+	CLI_E_CMD_NOT_FOUND, 	/* Command name not found in command table. */
+	CLI_E_INVALID_ARGS,  	/* Invalid function parameters/arguments.   */
+	CLI_E_BUF_FULL,	     	/* CLI buffer full.                         */
+	CLI_IDLE	     		/* No command to execute at the moment      */
 } cli_status_t;
+
+typedef enum {
+	CLI_MSG_ADDR,
+	CLI_MSG_CMD,
+	CLI_MSG_PEND
+} cli_state_t;
 
 /*!
  * @brief Function type declarations.
@@ -40,8 +55,9 @@ typedef struct {
  */
 typedef struct {
 	println_func_ptr_t println; /* Function pointer to user defined println function.      */
-	cmd_t *cmd_tbl;		    /* Pointer to series of commands which are to be accepted. */
-	size_t cmd_cnt;		    /* Number of commands in cmd_tbl.                          */
+	cmd_t *cmd_tbl;		    	/* Pointer to series of commands which are to be accepted. */
+	size_t cmd_cnt;		    	/* Number of commands in cmd_tbl.                          */
+	uint8_t address;			/* Current device address */
 } cli_t;
 
 #endif

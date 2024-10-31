@@ -166,9 +166,9 @@ uint8_t gpio_sw_addr_get()
   uint8_t addr = 0;
   for (uint8_t sw_idx = 0; sw_idx < SW_PINS_NUM; ++sw_idx)
   {
-    if (sw_buttons[sw_idx].state == GPIO_PIN_SET)
+    if (sw_buttons[sw_idx].state == GPIO_PIN_RESET)
     {
-      addr |= 0x01 << sw_idx;
+      addr |= 0x01 << (SW_PINS_NUM - sw_idx - 1);
     }
   }
 

@@ -34,12 +34,15 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+//#include <ctype.h>
 
 static volatile uint8_t buf[MAX_BUF_SIZE]; /* CLI Rx byte-buffer */
 static volatile uint8_t *buf_ptr;	   /* Pointer to Rx byte-buffer */
 
 static uint8_t cmd_buf[MAX_BUF_SIZE]; /* CLI command buffer */
-static volatile uint8_t cmd_pending;
+static volatile cli_state_t cmd_state;
 
 const char cli_prompt[] = ">> "; /* CLI prompt displayed to the user */
 const char cli_unrecog[] = "CMD: Command not recognised\r\n";
@@ -56,7 +59,8 @@ cli_status_t cli_init(cli_t *cli)
 {
 	/* Set buffer ptr to beginning of buf */
 	buf_ptr = buf;
-	cmd_pending = 0;
+	cmd_state = CLI_MSG_ADDR;
+	cli->address = 0xFF;
 
 	return CLI_OK;
 }
@@ -69,12 +73,24 @@ cli_status_t cli_deinit(cli_t *cli)
 	return CLI_OK;
 }
 
+void cli_set_address(cli_t *cli, uint8_t address)
+{
+	cli->address = address;
+
+	return;
+}
+
+static bool cli_verify_address(cli_t *cli, uint8_t address)
+{
+	return (cli->address == address);
+}
+
 /*! @brief This API must be periodically called by the user to process and
  * execute any commands received.
  */
 cli_status_t cli_process(cli_t *cli)
 {
-	if(!cmd_pending)
+	if(cmd_state != CLI_MSG_PEND)
 		return CLI_IDLE;
 
 	uint8_t argc = 0;
@@ -95,7 +111,7 @@ cli_status_t cli_process(cli_t *cli)
 			/* Found a match, execute the associated function. */
 			cli_status_t return_value = cli->cmd_tbl[i].func(argc, argv);
 			cli_print(cli, cli_prompt); /* Print the CLI prompt to the user. */
-			cmd_pending = 0;
+			cmd_state = CLI_MSG_ADDR;
 			return return_value;
 		}
 	}
@@ -105,7 +121,7 @@ cli_status_t cli_process(cli_t *cli)
 
 	cli_print(cli, cli_prompt); /* Print the CLI prompt to the user. */
 
-	cmd_pending = 0;
+	cmd_state = CLI_MSG_ADDR;
 	return CLI_E_CMD_NOT_FOUND;
 }
 
@@ -115,31 +131,67 @@ cli_status_t cli_process(cli_t *cli)
  */
 cli_status_t cli_put(cli_t *cli, char c)
 {
-	switch(c) {
-	case CMD_TERMINATOR:
-
-		if(!cmd_pending) {
-			*buf_ptr = '\0';      /* Terminate the msg and reset the msg ptr.      */
-			strcpy(cmd_buf, buf); /* Copy string to command buffer for processing. */
-			cmd_pending = 1;
-			buf_ptr = buf; /* Reset buf_ptr to beginning.                   */
+	switch(c) 
+	{
+		case CMD_TERMINATOR:
+		{
+			if(CLI_MSG_CMD == cmd_state) 
+			{
+				*buf_ptr = '\0';      	/* Terminate the msg and reset the msg ptr.      */
+				strcpy(cmd_buf, buf); 	/* Copy string to command buffer for processing. */
+				cmd_state = CLI_MSG_PEND;
+				buf_ptr = buf; 			/* Reset buf_ptr to beginning.                   */
+			}
+			else
+			{
+				cmd_state = CLI_MSG_ADDR;
+				buf_ptr = buf; 			/* Reset buf_ptr to beginning.                   */
+				return CLI_E_INVALID_ARGS;
+			}
+			break;
 		}
-		break;
+		case CMD_NEWLINE:
+		{
+			/* Just ignore */
+			break;
+		}
+		default:
+		{
+			/* Normal character received, add to buffer. */
+			if((buf_ptr - buf) < MAX_BUF_SIZE)
+			{
+				*buf_ptr++ = c;
+				if (CLI_MSG_ADDR == cmd_state)
+				{
+					if (!isdigit(c))
+					{
+						buf_ptr = buf;
+						return CLI_E_INVALID_ARGS;		
+					}
 
-	case '\b':
-		/* Backspace. Delete character. */
-		if(buf_ptr > buf)
-			buf_ptr--;
-		break;
-
-	default:
-		/* Normal character received, add to buffer. */
-		if((buf_ptr - buf) < MAX_BUF_SIZE)
-			*buf_ptr++ = c;
-		else
-			return CLI_E_BUF_FULL;
-		break;
+					if (ADDR_SIZE == buf_ptr - buf)
+					{
+						*buf_ptr = '\0';
+						uint8_t addr = atoi(buf);
+						if ((addr >= ADDR_MIN) && (addr <= ADDR_MAX) && cli_verify_address(cli, addr))
+						{
+							buf_ptr = buf;
+							cmd_state = CLI_MSG_CMD;
+						}
+					}
+				}
+			}
+			else
+			{
+				buf_ptr = buf;
+				cmd_state = CLI_MSG_ADDR;
+				return CLI_E_BUF_FULL;
+			}
+			break;
+		}
 	}
+
+	return;
 }
 
 /*!

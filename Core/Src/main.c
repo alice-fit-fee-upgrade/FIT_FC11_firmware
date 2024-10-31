@@ -114,14 +114,20 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   gpio_sw_state_read();
+  uint8_t addr = gpio_sw_addr_get();
+  cli_set_address(&cli, addr);
 
   while (1)
   {
+    /* Check address */
+    uint8_t new_addr = gpio_sw_addr_get();
+    if (new_addr != addr)
+    {
+      cli_set_address(&cli, new_addr);
+    }
+
     /* Parse the message from console */
     cli_process(&cli);
-
-    /* Get address */
-    uint8_t addr = gpio_sw_addr_get();
 
     /* Some delay */
     HAL_Delay(250);

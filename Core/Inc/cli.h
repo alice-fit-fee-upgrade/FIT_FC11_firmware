@@ -83,6 +83,8 @@ cli_status_t cli_process(cli_t *cli);
  */
 cli_status_t cli_put(cli_t *cli, char c);
 
+void cli_set_address(cli_t *cli, uint8_t address);
+
 #ifdef __cplusplus
 }
 #endif /* End of CPP guard */
