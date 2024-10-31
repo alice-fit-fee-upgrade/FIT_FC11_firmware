@@ -54,13 +54,30 @@ uint8_t usart_buf[1];
 void SystemClock_Config(void);
 static void MX_NVIC_Init(void);
 /* USER CODE BEGIN PFP */
-static cli_status_t help_func(int argc, char **argv);
-static cli_status_t blink_func(int argc, char **argv);
+static cli_status_t cmd_read_status(int argc, char **argv);
+static cli_status_t cmd_relay_l_off(int argc, char **argv);
+static cli_status_t cmd_relay_l_on(int argc, char **argv);
+static cli_status_t cmd_relay_m_off(int argc, char **argv);
+static cli_status_t cmd_relay_m_on(int argc, char **argv);
+static cli_status_t cmd_version(int argc, char **argv);
+static cli_status_t cmd_diagnostic_mode(int argc, char **argv);
+static cli_status_t cmd_reset(int argc, char **argv);
+static cli_status_t cmd_upgrade_mode(int argc, char **argv);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-cmd_t cmd_tbl[] = {{.cmd = "help", .func = help_func}, {.cmd = "blink", .func = blink_func}};
+cmd_t cmd_tbl[] = {
+  {.cmd = "R", .func = cmd_read_status}, 
+  {.cmd = "L0", .func = cmd_relay_l_off},
+  {.cmd = "L1", .func = cmd_relay_l_on},
+  {.cmd = "M0", .func = cmd_relay_m_off},
+  {.cmd = "M1", .func = cmd_relay_m_on},
+  {.cmd = "version", .func = cmd_version},
+  {.cmd = "diagnostic_mode_on", .func = cmd_diagnostic_mode},
+  {.cmd = "board_reset", .func = cmd_reset},
+  {.cmd = "remote_upgrade_mode", .func = cmd_upgrade_mode}
+  };
 cli_t cli;
 /* USER CODE END 0 */
 
@@ -199,15 +216,57 @@ static void MX_NVIC_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-cli_status_t help_func(int argc, char **argv)
+cli_status_t cmd_read_status(int argc, char **argv)
 {
-	cli.println("HELP function executed");
+	cli.println("R function executed");
 	return CLI_OK;
 }
 
-cli_status_t blink_func(int argc, char **argv)
+cli_status_t cmd_relay_l_off(int argc, char **argv)
 {
-	cli.println("BLINK function executed");
+	cli.println("L0 function executed");
+	return CLI_OK;
+}
+
+cli_status_t cmd_relay_l_on(int argc, char **argv)
+{
+	cli.println("L1 function executed");
+	return CLI_OK;
+}
+
+cli_status_t cmd_relay_m_off(int argc, char **argv)
+{
+	cli.println("M0 function executed");
+	return CLI_OK;
+}
+
+cli_status_t cmd_relay_m_on(int argc, char **argv)
+{
+	cli.println("M1 function executed");
+	return CLI_OK;
+}
+
+cli_status_t cmd_version(int argc, char **argv)
+{
+	cli.println("version");
+	return CLI_OK;
+}
+
+cli_status_t cmd_diagnostic_mode(int argc, char **argv)
+{
+	cli.println("diagnostic_mode_on");
+	return CLI_OK;
+}
+
+cli_status_t cmd_reset(int argc, char **argv)
+{
+	cli.println("board_reset");
+	return CLI_OK;
+}
+
+cli_status_t cmd_upgrade_mode(int argc, char **argv)
+{
+	cli.println("remote_upgrade_mode");
 	return CLI_OK;
 }
 
