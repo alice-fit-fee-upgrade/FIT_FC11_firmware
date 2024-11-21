@@ -56,9 +56,10 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim4;
 /* USER CODE BEGIN EV */
-extern cli_t cli;
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -215,6 +216,20 @@ void EXTI9_5_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM2 global interrupt.
+  */
+void TIM2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM2_IRQn 0 */
+
+  /* USER CODE END TIM2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim2);
+  /* USER CODE BEGIN TIM2_IRQn 1 */
+
+  /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM4 global interrupt.
   */
 void TIM4_IRQHandler(void)
@@ -239,7 +254,7 @@ void USART1_IRQHandler(void)
   {
     //LL_USART_ClearFlag_RXNE(USART1);
     uint8_t data = LL_USART_ReceiveData8(USART1);
-    cli_put(&cli, data);
+    cli_put(data);
   }
   else
   {
@@ -282,5 +297,20 @@ void EXTI15_10_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+uint32_t captureValue = 0;
+uint32_t previousCaptureValue = 0;
+uint32_t frequency = 0;
 
+void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+{
+  if (htim->Instance == TIM2)
+  {
+    if (htim->Channel == HAL_TIM_ACTIVE_CHANNEL_2)
+    {
+        captureValue = HAL_TIM_ReadCapturedValue(htim, TIM_CHANNEL_2);
+        frequency = HAL_RCC_GetPCLK1Freq() / (captureValue - previousCaptureValue);
+        previousCaptureValue = captureValue;
+    }
+  }
+}
 /* USER CODE END 1 */

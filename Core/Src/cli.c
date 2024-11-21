@@ -31,6 +31,8 @@
  * @brief Implementation of command-line interface.
  */
 #include "cli.h"
+#include "gpio.h"
+#include "fc11.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -44,22 +46,21 @@ static volatile uint8_t *buf_ptr;	   /* Pointer to Rx byte-buffer */
 static uint8_t cmd_buf[MAX_BUF_SIZE]; /* CLI command buffer */
 static volatile cli_state_t cmd_state;
 
-const char cli_unrecog[] = "%02d Fail\r\n";
+const char cli_unrecog[] = "Fail\r";
 
-/*!
- * @brief This internal API prints a message to the user on the CLI.
- */
-static void cli_print(cli_t *cli, const char *msg);
+static cli_t cli;
 
 /*!
  * @brief This API initialises the command-line interface.
  */
-cli_status_t cli_init(cli_t *cli)
+cli_status_t cli_init(println_func_ptr_t println, cmd_t *cmd_tbl, size_t cmd_tbl_size)
 {
 	/* Set buffer ptr to beginning of buf */
 	buf_ptr = buf;
 	cmd_state = CLI_MSG_ADDR;
-	cli->address = 0xFF;
+	cli.println = println;
+	cli.cmd_tbl = cmd_tbl;
+	cli.cmd_cnt = cmd_tbl_size / sizeof(cmd_t);
 
 	return CLI_OK;
 }
@@ -67,27 +68,30 @@ cli_status_t cli_init(cli_t *cli)
 /*!
  * @brief This API deinitialises the command-line interface.
  */
-cli_status_t cli_deinit(cli_t *cli)
+cli_status_t cli_deinit()
 {
 	return CLI_OK;
 }
 
-void cli_set_address(cli_t *cli, uint8_t address)
+void cli_diag_mode_on()
 {
-	cli->address = address;
+	cmd_state = CLI_MSG_DIAG;
 
 	return;
 }
 
-static bool cli_verify_address(cli_t *cli, uint8_t address)
+static void cli_set_diag_mode_off()
 {
-	return (cli->address == address);
+	cmd_state = CLI_MSG_ADDR;
+	buf_ptr = buf;
+
+	return;
 }
 
 /*! @brief This API must be periodically called by the user to process and
  * execute any commands received.
  */
-cli_status_t cli_process(cli_t *cli)
+cli_status_t cli_process()
 {
 	if(cmd_state != CLI_MSG_PEND)
 		return CLI_IDLE;
@@ -105,20 +109,22 @@ cli_status_t cli_process(cli_t *cli)
 
 	/* Search the command table for a matching command, using argv[0]
 	 * which is the command name. */
-	for(size_t i = 0; i < cli->cmd_cnt; i++) 
+	for(size_t i = 0; i < cli.cmd_cnt; i++) 
 	{
-		if(strcmp(argv[0], cli->cmd_tbl[i].cmd) == 0) 
+		if(strcmp(argv[0], cli.cmd_tbl[i].cmd) == 0) 
 		{
 			/* Found a match, execute the associated function. */
-			cli_status_t return_value = cli->cmd_tbl[i].func(argc, argv);
-			cmd_state = CLI_MSG_ADDR;
+			cli_status_t return_value = cli.cmd_tbl[i].func(argc, argv);
+			if (cmd_state != CLI_MSG_DIAG)
+			{
+				cmd_state = CLI_MSG_ADDR;
+			}
 			return return_value;
 		}
 	}
 
 	/* Command not found */
-	sprintf(cmd_buf, cli_unrecog, cli->address);
-	cli_print(cli, cmd_buf);
+	cli_print(cli_unrecog, true);
 
 	cmd_state = CLI_MSG_ADDR;
 	return CLI_E_CMD_NOT_FOUND;
@@ -128,8 +134,65 @@ cli_status_t cli_process(cli_t *cli)
  * @brief This API should be called from the devices interrupt handler whenever
  * a character is received over the input stream.
  */
-cli_status_t cli_put(cli_t *cli, char c)
+cli_status_t cli_put(char c)
 {
+	if (CLI_MSG_DIAG == cmd_state)
+	{
+		switch(c)
+		{
+			case 0x20:
+			{
+				gpio_fans_toggle_state();
+				break;
+			}
+			case 0x30 ... 0x39:
+			{
+				TIM3->CCR3 = 10 * (c - 0x30);
+				break;
+			}
+			case 'f':
+			{
+				TIM3->CCR3 = 100;
+				break;
+			}
+			case 'l':
+			{
+				gpio_en_set_state(EN7_Pin, GPIO_PIN_SET);
+				break;
+			}
+			case 'L':
+			{
+				gpio_en_set_state(EN7_Pin, GPIO_PIN_RESET);
+				break;
+			}
+			case 'm':
+			{
+				gpio_en_set_state(EN8_Pin, GPIO_PIN_SET);
+				break;
+			}
+			case 'M':
+			{
+				gpio_en_set_state(EN8_Pin, GPIO_PIN_RESET);
+				break;
+			}
+			case 'x':
+			{
+				cli_set_diag_mode_off();
+				break;
+			}
+			case 'z':
+			{
+				NVIC_SystemReset();
+				break;
+			}
+			default:
+			{
+				break;
+			}
+		}
+		return;
+	}
+	
 	switch(c) 
 	{
 		case CMD_TERMINATOR:
@@ -172,7 +235,7 @@ cli_status_t cli_put(cli_t *cli, char c)
 					{
 						*buf_ptr = '\0';
 						uint8_t addr = atoi(buf);
-						if ((addr >= ADDR_MIN) && (addr <= ADDR_MAX) && cli_verify_address(cli, addr))
+						if ((addr >= ADDR_MIN) && (addr <= ADDR_MAX) && fc11_address_confirm(addr))
 						{
 							buf_ptr = buf;
 							cmd_state = CLI_MSG_CMD;
@@ -196,11 +259,16 @@ cli_status_t cli_put(cli_t *cli, char c)
 /*!
  * @brief Print a message on the command-line interface.
  */
-static void cli_print(cli_t *cli, const char *msg)
+void cli_print(const char *msg, bool b_use_addr)
 {
-	/* Temp buffer to store text in ram first */
-	char buf[50];
+	uint16_t msg_idx = 0;
+	if (b_use_addr)
+	{
+		sprintf(cmd_buf, "%02d ", fc11_address_get());
+		msg_idx += 3;
+	}
+	sprintf(cmd_buf + msg_idx, msg);
+	cli.println(cmd_buf);
 
-	strcpy(buf, msg);
-	cli->println(buf);
+	return;
 }

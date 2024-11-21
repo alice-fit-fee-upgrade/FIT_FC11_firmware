@@ -27,6 +27,7 @@
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
 #include "cli.h"
+#include "fc11.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -78,7 +79,7 @@ cmd_t cmd_tbl[] = {
   {.cmd = "board_reset", .func = cmd_reset},
   {.cmd = "remote_upgrade_mode", .func = cmd_upgrade_mode}
   };
-cli_t cli;
+
 /* USER CODE END 0 */
 
 /**
@@ -120,19 +121,25 @@ int main(void)
   /* Initialize interrupts */
   MX_NVIC_Init();
   /* USER CODE BEGIN 2 */
-  uint8_t msg_buf[35] = {'\0'};
-  uint8_t cnt = 0;
-  cli.println = usart_print;
-	cli.cmd_tbl = cmd_tbl;
-	cli.cmd_cnt = sizeof(cmd_tbl) / sizeof(cmd_t);
-	cli_init(&cli);
+  //uint8_t msg_buf[35] = {'\0'};
+  //uint8_t cnt = 0;
+  cli_init(usart_print, cmd_tbl, sizeof(cmd_tbl));
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  fc11_init();
+  
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
+
   gpio_sw_state_read();
   uint8_t addr = gpio_sw_addr_get();
-  cli_set_address(&cli, addr);
+  fc11_address_set(addr);
+
+  HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
   while (1)
   {
@@ -140,11 +147,11 @@ int main(void)
     uint8_t new_addr = gpio_sw_addr_get();
     if (new_addr != addr)
     {
-      cli_set_address(&cli, new_addr);
+      fc11_address_set(addr);
     }
 
     /* Parse the message from console */
-    cli_process(&cli);
+    cli_process();
 
     /* Some delay */
     HAL_Delay(250);
@@ -218,55 +225,72 @@ static void MX_NVIC_Init(void)
 /* USER CODE BEGIN 4 */
 cli_status_t cmd_read_status(int argc, char **argv)
 {
-	cli.println("R function executed");
+  char status_buf[64];
+  fc11_status_string_get(status_buf);
+  cli_print(status_buf, true);
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_relay_l_off(int argc, char **argv)
 {
-	cli.println("L0 function executed");
+  fc11_out_state_set(REL_L_PIN_IDX, GPIO_PIN_RESET);
+  cli_print("OK\r", true);
 	return CLI_OK;
 }
 
 cli_status_t cmd_relay_l_on(int argc, char **argv)
 {
-	cli.println("L1 function executed");
+  fc11_out_state_set(REL_L_PIN_IDX, GPIO_PIN_SET);
+  cli_print("OK\r", true);
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_relay_m_off(int argc, char **argv)
 {
-	cli.println("M0 function executed");
+  fc11_out_state_set(REL_M_PIN_IDX, GPIO_PIN_RESET);
+  cli_print("OK\r", true);
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_relay_m_on(int argc, char **argv)
 {
-	cli.println("M1 function executed");
+  fc11_out_state_set(REL_M_PIN_IDX, GPIO_PIN_SET);
+  cli_print("OK\r", true);
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_version(int argc, char **argv)
 {
-	cli.println("version");
+  char status_buf[64];
+  fc11_version_string_get(status_buf);
+  cli_print(status_buf, true);
 	return CLI_OK;
 }
 
 cli_status_t cmd_diagnostic_mode(int argc, char **argv)
 {
-	cli.println("diagnostic_mode_on");
+  cli_diag_mode_on();
+  cli_print("OK\r", true);
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_reset(int argc, char **argv)
 {
-	cli.println("board_reset");
+  cli_print("OK\r", true);
+  NVIC_SystemReset();
+
 	return CLI_OK;
 }
 
 cli_status_t cmd_upgrade_mode(int argc, char **argv)
 {
-	cli.println("remote_upgrade_mode");
+
+
 	return CLI_OK;
 }
 

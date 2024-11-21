@@ -43,6 +43,7 @@ extern "C" {
 #endif
 
 #include "cli_defs.h"
+#include "stdbool.h"
 
 /*!
  * @brief This API initialises the command-line interface.
@@ -51,7 +52,7 @@ extern "C" {
  *
  * @return cli_status_t
  */
-cli_status_t cli_init(cli_t *cli);
+cli_status_t cli_init();
 
 /*!
  * @brief This API deinitialises the command-line interface.
@@ -60,7 +61,7 @@ cli_status_t cli_init(cli_t *cli);
  *
  * @return cli_status_t
  */
-cli_status_t cli_deinit(cli_t *cli);
+cli_status_t cli_deinit();
 
 /*!
  * @brief This API must be periodically called by the user to process and
@@ -70,7 +71,7 @@ cli_status_t cli_deinit(cli_t *cli);
  *
  * @return cli_status_t
  */
-cli_status_t cli_process(cli_t *cli);
+cli_status_t cli_process();
 
 /*!
  * @brief This API should be called from the devices interrupt handler whenever
@@ -81,9 +82,10 @@ cli_status_t cli_process(cli_t *cli);
  *
  * @return cli_status_t
  */
-cli_status_t cli_put(cli_t *cli, char c);
+cli_status_t cli_put(char c);
 
-void cli_set_address(cli_t *cli, uint8_t address);
+void cli_diag_mode_on();
+void cli_print(const char *msg, bool b_use_addr);
 
 #ifdef __cplusplus
 }

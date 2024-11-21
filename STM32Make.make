@@ -76,6 +76,7 @@ endif
 # C sources
 C_SOURCES =  \
 Core/Src/cli.c \
+Core/Src/fc11.c \
 Core/Src/gpio.c \
 Core/Src/i2c.c \
 Core/Src/main.c \

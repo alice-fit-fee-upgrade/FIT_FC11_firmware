@@ -48,6 +48,22 @@ void MX_GPIO_Init(void);
 /* USER CODE BEGIN Prototypes */
 void gpio_sw_state_read(void);
 uint8_t gpio_sw_addr_get(void);
+
+static inline void gpio_en_set_state(uint8_t pin_idx, GPIO_PinState state)
+{
+  HAL_GPIO_WritePin(GPIOA, pin_idx, state);
+  return;
+}
+
+static inline void gpio_fans_toggle_state()
+{
+  HAL_GPIO_TogglePin(GPIOA, EN1_Pin);
+  HAL_GPIO_TogglePin(GPIOA, EN2_Pin);
+  HAL_GPIO_TogglePin(GPIOA, EN3_Pin);
+  HAL_GPIO_TogglePin(GPIOA, EN4_Pin);
+  HAL_GPIO_TogglePin(GPIOA, EN5_Pin);
+  return;
+}
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

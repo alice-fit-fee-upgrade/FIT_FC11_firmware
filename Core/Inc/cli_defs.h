@@ -33,7 +33,8 @@ typedef enum {
 typedef enum {
 	CLI_MSG_ADDR,
 	CLI_MSG_CMD,
-	CLI_MSG_PEND
+	CLI_MSG_PEND,
+	CLI_MSG_DIAG
 } cli_state_t;
 
 /*!
@@ -54,10 +55,9 @@ typedef struct {
  * @brief Command-line interface handle structure.
  */
 typedef struct {
-	println_func_ptr_t println; /* Function pointer to user defined println function.      */
-	cmd_t *cmd_tbl;		    	/* Pointer to series of commands which are to be accepted. */
-	size_t cmd_cnt;		    	/* Number of commands in cmd_tbl.                          */
-	uint8_t address;			/* Current device address */
+	println_func_ptr_t println;
+	cmd_t *cmd_tbl;
+	size_t cmd_cnt;
 } cli_t;
 
 #endif
