@@ -36,7 +36,9 @@ In the diagnostic mode all commands are initiated by simply pressing a key.
 
 ## Remarks
 ### PCB
-The version of the original PCB is MMXXI-V11 and the version of the recreated PCB is FIT v1.1 2024, should be 1.2 probably
+The version of the original PCB is `MMXXI-V11` and the version of the recreated PCB is `FIT v1.1 2024`, should be `v1.2` probably. 
+The original PCB firmware responds with hw version `1.1`
+responds
 ### CLI
 THe commands mentioned in the FCB Manual are not all available on the original PCB firmware. 
 The manual is probably newer than the original PCB firmware (which is 1.0) The differences are:
@@ -47,3 +49,10 @@ Additional commands mentioned in the manual seem not to be working.
 ### FANS
 For now it's unknown what is the default fan speed and how it is adjusted. The only way to change them seems to be through *diagnostic mode* but it's not clear
 whether changes made while being within this mode are permament.
+
+## To Do List
+- [] Remote upgrade
+- [] Read fans RPMs
+- [] Find out initial fans RPM
+- [] Find out how fans RPM is changed during operation
+- [] Add MLX90393 readout
