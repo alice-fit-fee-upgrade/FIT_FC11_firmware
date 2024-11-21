@@ -128,16 +128,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-  fc11_init();
-  
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_14, GPIO_PIN_SET);
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_15, GPIO_PIN_RESET);
 
+  fc11_init();
   gpio_sw_state_read();
   uint8_t addr = gpio_sw_addr_get();
   fc11_address_set(addr);
+
+  gpio_fans_toggle_state();
 
   HAL_TIM_IC_Start_IT(&htim2, TIM_CHANNEL_2);
 
